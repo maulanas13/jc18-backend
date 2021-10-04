@@ -99,9 +99,24 @@
 //   appendFileSync,
 //   writeFile,
 //   appendFile,
+//   readFile,
+
 // } = require("fs");
 
-// const { writeFile, mkdir } = require("fs").promises;
+// writeFile("./tes/listname.csv", "dino blabla", (err) => {
+//   if (err) {
+//     return console.log(err);
+//   }
+//   console.log("berhasil");
+// });
+// console.log("iya");
+// // const { writeFile, mkdir } = require("fs").promises;
+// readFile("./text/test.txt", (err, data) => {
+//   if (err) {
+//     return err;
+//   }
+//   console.log(data);
+// });
 
 // const hasil = readFileSync("./index.html", "utf-8");
 // var arr = [
@@ -139,37 +154,60 @@
 // console.log(hasil);
 
 // ? http
-var users = [
-  {
-    username: "tes",
-    password: "abce",
-  },
-  {
-    username: "tes",
-    password: "abce",
-  },
-];
-var products = [
-  {
-    name: "tes1",
-    keterangan: "abce",
-  },
-  {
-    name: "tes2",
-    keterangan: "abce",
-  },
-];
+// var users = [
+//   {
+//     username: "tes",
+//     password: "abce",
+//   },
+//   {
+//     username: "tes",
+//     password: "abce",
+//   },
+// ];
+// var products = [
+//   {
+//     name: "tes1",
+//     keterangan: "abce",
+//   },
+//   {
+//     name: "tes2",
+//     keterangan: "abce",
+//   },
+// ];
 const http = require("http");
-// const url = require("url");
+const { createReadStream } = require("fs");
+// // const url = require("url");
 
 const server = http.createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "application/json" });
   //proses mengubah data bahasa pemrograman menjadi json disebut serialisasi
-  console.log(req.url);
+  //   console.log(req.url);
   if (req.url === "/products" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(products));
   } else if (req.url === "/users" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(users));
+  } else if (req.url === "/text" && req.method === "GET") {
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": "attachment; filename=download.txt",
+    });
+
+    let readStream = createReadStream("./text/test.txt");
+
+    // readStream.on("open", () => {
+    //   console.log(data);
+    //   readStream.pipe(res);
+    // });
+
+    readStream.on("data", (data) => {
+      console.log(data);
+      readStream.pipe(res);
+    });
+    // This catches any errors that happen while creating the readable stream (usually invalid names)
+    readStream.on("error", function (err) {
+      res.end(err);
+    });
   } else {
     let obj = {
       message: "selamat datang",
@@ -179,3 +217,8 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(5000, () => console.log("Server jalan di port 5000"));
+
+// const { isSatorSun } = require("./helpers");
+
+// console.log(isSatorSun()); //false
+// console.log(isSatorSun("2021-10-03")); //true
