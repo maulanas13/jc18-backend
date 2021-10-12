@@ -3,6 +3,23 @@ const app = express();
 const cors = require("cors");
 const PORT = 5100;
 const { renderHtml } = require("./helpers");
+require('dotenv').config();
+const mysql = require('mysql');
+const connection = mysql.createConnection({
+  port: 3306, // Biasanya ini default MySql
+  host: "localhost",
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: 'belajar_mysql_01'
+});
+
+connection.connect((err) => {
+  if (err) {
+    console.error("error connecting: " + err.stack);
+    return;
+  }
+  console.log("connected as id " + connection.threadId);
+});
 
 // Anggap database (users & products)
 let users = [
