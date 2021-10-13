@@ -4,39 +4,38 @@ const cors = require("cors");
 const PORT = 5100;
 const { renderHtml } = require("./src/helpers");
 require('dotenv').config();
-const mysql = require('mysql2');
-const connection = mysql.createConnection({
-  port: 3306, // Biasanya ini default MySql
-  host: "localhost",
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: 'belajar_mysql_01'
-});
+const morgan = require("morgan");
+const path = require("path");
+const fs = require('fs');
 
-connection.connect((err) => {
-  if (err) {
-    console.error("error connecting: " + err.stack);
-    return;
+morgan.token("date", function (req, res) {
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   }
-  console.log("connected as id " + connection.threadId);
+  return new Date().toLocaleString("id-ID", options);
 });
 
-const loggingFunc = (req, res, next) => { // Function utk record console log, guna utk troubleshoot backend ketika request user ada error
-    console.log(req.method, req.url, new Date().toString());
-    req.bambang = "namaku"; // nambah property bambang di object req
-    next();
-}
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  {
+    flags: "a",
+  }
+);
+
+app.use(morgan(":method :url :status :res[content-length] - :response-time ms :date", {stream: accessLogStream}));
 
 // Pasang middleware
 app.use(express.json()); // Middleware global start
 app.use(cors()); // Klo kyk gini, semua backend bs keakses, kita bisa ksh whitelist sendiri
-app.use(loggingFunc);
 // ini midlleware untuk nampung data body untuk method post,put,patch
 
 // Bagian ini jgn sampe ngeduluin semua syntax yg diatas
 const { authRoute, productRoute, userRoute } = require("./src/routes");
 
-// GENERAL REQUEST
+// RENDERING HTML HOMEPAGE
 app.get("/", async (req, res) => {
   console.log(req.bambang, "dari function sebelumnya");
   let tampilanWelcome = await renderHtml("./index.html");
