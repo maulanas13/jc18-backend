@@ -93,9 +93,9 @@ module.exports = {
         const {id} = req.params;
         const connDb = connection.promise();
         try {
-          let sql = "SELECT * FROM user WHERE id = ?";
-          const [dataUser] = await connDb.query(sql, [id]);
-          return res.status(200).send(dataUser[0]);
+          let sql = "SELECT * FROM products WHERE id = ?";
+          const [prodData] = await connDb.query(sql, [id]);
+          return res.status(200).send(prodData[0]);
         } catch (err) {
           console.log("error : ", err);
           return res.status(500).send({message: err.message});

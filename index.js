@@ -7,6 +7,7 @@ require('dotenv').config();
 const morgan = require("morgan");
 const path = require("path");
 const fs = require('fs');
+const bearerToken = require('express-bearer-token');
 
 morgan.token("date", function (req, res) {
   const options = {
@@ -31,6 +32,9 @@ app.use(morgan(":method :url :status :res[content-length] - :response-time ms :d
 app.use(express.json()); // Middleware global start
 app.use(cors()); // Klo kyk gini, semua backend bs keakses, kita bisa ksh whitelist sendiri
 // ini midlleware untuk nampung data body untuk method post,put,patch
+
+// Untuk membuat token masuk kedalam req.token (mempermudah pemanggilan)
+app.use(bearerToken());
 
 // Bagian ini jgn sampe ngeduluin semua syntax yg diatas
 const { authRoute, productRoute, userRoute } = require("./src/routes");
