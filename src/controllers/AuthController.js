@@ -1,22 +1,21 @@
 "use strict";
 const { connection } = require("./../connections");
-const {hashPass, createToken} = require("./../helpers");
-const nodemailer = require("nodemailer");
+const {hashPass, createToken, transporter} = require("./../helpers");
 const fs = require("fs");
 const path = require("path");
 const handlebars = require("handlebars");
 const {createTokenAccess, createTokenEmailVerified} = createToken; // Destructuring createToken
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: "tesproduk13@gmail.com", // generated ethereal user
-    pass: "wzyosyhlycnhyekb", // generated ethereal password
-  },
-  tls: {
-    rejectUnauthorized: false,
-  }
-});
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: "tesproduk13@gmail.com", // generated ethereal user
+//     pass: "wzyosyhlycnhyekb", // generated ethereal password
+//   },
+//   tls: {
+//     rejectUnauthorized: false,
+//   }
+// });
 
 module.exports = {
   login: (req, res) => {
@@ -51,14 +50,18 @@ module.exports = {
   },
   register: async (req, res) => {
     // TODO:
+    // cek username ada atau enggak
+    // kalo ada return status 500 dan kasih message username telah ada
+    // kalo tidak ada add data to user table
+    // jika berhasil kirim email verifikasi
+    // get lagi datanya kayak login
     // Rencana nya melakukan verifikasi email ditengah2 proses, dll
 
     const { username, email, password } = req.body;
     const connDb = connection.promise();
     try {
-      let sql = "SELECT * FROM user WHERE username = ?";
-
       // Cek username ada / tidak
+      let sql = "SELECT * FROM user WHERE username = ?";
       let [dataUser] = await connDb.query(sql, [username]);
       if (dataUser.length) {
         throw { message: "username sudah ada" };
@@ -73,27 +76,38 @@ module.exports = {
       };
       let [result] = await connDb.query(sql, [dataInsert]);
       console.log(result.insertId);
+      // insertId adalah id yang baru dihasilkan dari insertData
+
+      // Get data kyk login
+      sql = "SELECT * FROM user WHERE id = ?";
+      let [dataUserRes] = await connDb.query(sql, [result.insertId]);
+
+      let dataToken = {
+        id: dataUserRes[0].id,
+        role_id: dataUserRes[0].role_id,
+      };
+      let tokenAccess = createTokenAccess(dataToken);
+      let tokenEmailVerified = createTokenEmailVerified(dataToken);
 
       // Kirim email verifikasi
       let filepath = path.resolve(__dirname, "../template/EmailVerifikasi.html");
       let htmlString = fs.readFileSync(filepath, "utf-8");
-      console.log(htmlString);
-      let template= handlebars.compile(htmlString);
-      const htmlToEmail = template({nama: username, userId: result.insertId});
+      // console.log(htmlString);
+      const template= handlebars.compile(htmlString);
+      const htmlToEmail = template({
+        nama: username, 
+        token: tokenEmailVerified
+      });
       console.log(htmlToEmail);
       await transporter.sendMail({
         from: "Commander Erwin <tesproduk13@gmail.com>",
         to: email,
-        subject: "Email Verifikasi From Commander",
+        subject: "Verification Email From Commander",
         html: htmlToEmail,
       });
 
-      // Get lagi data kyk login
-      sql = "SELECT * FROM user WHERE id = ?";
-      let [dataUserRes] = await connDb.query(sql, [result.insertId]);
-
       // Send response
-      return res.status(200).send(dataUserRes);
+      return res.status(200).send({token: tokenAccess, data: dataUserRes[0]});
     } catch (err) {
       // Klo ada return status 500 & ksh message username telah ada
       console.log("error : ", err);
@@ -129,4 +143,64 @@ module.exports = {
       return res.status(500).send({ message: err.message });
     }
   },
+  verified: async (req, res) => {
+    const {id} = req.user;
+    const connDb = connection.promise();
+    try {
+      let updateData = {
+        isVerified: 1
+      }
+      let sql = "UPDATE user SET ? WHERE id = ?";
+      await connDb.query(sql, [updateData, id]);
+      sql = "SELECT * FROM user WHERE id = ?";
+      let [dataUserRes] = await connDb.query(sql, [id]);
+      return res.status(200).send(dataUserRes[0]);
+    } catch (err) {
+      console.log("error : ", err);
+      return res.status(500).send({ message: err.message });
+    };
+  },
+  sendVerifiedEmail: async (req, res) => {
+    const {id_user} = req.params;
+    const connDb = connection.promise();
+    try {
+      // Get userdata by id_user
+      let sql = "SELECT * FROM user WHERE id ?"
+      let [dataUserRes] = await connDb.query(sql, [id_user]);
+      let dataToken = {
+        id: dataUserRes[0].id,
+        role_id: dataUserRes[0].role_id,
+      };
+      let tokenEmailVerified = createTokenEmailVerified(dataToken);
+
+      // Kirim email verifikasi
+      let filepath = path.resolve(__dirname, "../template/EmailVerifikasi.html");
+      let htmlString = fs.readFileSync(filepath, "utf-8");
+      const template= handlebars.compile(htmlString);
+      const htmlToEmail = template({nama: username, token: tokenEmailVerified});
+      await transporter.sendMail({
+        from: "Commander Erwin <tesproduk13@gmail.com>",
+        to: dataUserRes[0].email,
+        subject: "Verification Email From Commander",
+        html: htmlToEmail,
+      });
+      return res.status(200).send({message: "Berhasil kirim email verifikasi"});
+    } catch (err) {
+      console.log("error : ", err);
+      return res.status(500).send({ message: err.message });
+    };
+  },
+  keepLogin: async (req, res) => {
+    // Nggak update tokennya
+    const {id} = req.user;
+    const connDb = connection.promise();
+    try {
+      let sql = "SELECT * FROM user WHERE id = ?";
+      let [dataUserRes] = await connDb.query(sql, [id]);
+      return res.status(200).send(dataUserRes[0]);
+    } catch (err) {
+      console.log("error : ", err);
+      return res.status(500).send({ message: err.message });
+    };
+  }
 };

@@ -10,5 +10,5 @@ module.exports = {
         const key = "ObiWanKenobi";
         const token = jwt.sign(data, key, {expiresIn: "3m"}); // 3 menit
         return token;
-    }
+    },
 };
