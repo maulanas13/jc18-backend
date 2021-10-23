@@ -5,6 +5,7 @@ const hashPass = require("./HashPass");
 const createToken = require("./CreateToken");
 const verifyToken = require("./VerifyToken");
 const transporter = require("./Transporter");
+const uploader = require("./UploadFolder")
 
 module.exports = {
   isSatOrSun,
@@ -13,4 +14,5 @@ module.exports = {
   createToken,
   verifyToken,
   transporter,
+  uploader
 };
