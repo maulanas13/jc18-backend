@@ -41,6 +41,14 @@ app.use(express.urlencoded({extended: false}));
 
 app.use(express.static("public"));
 
+// Socket IO set up
+const http = require("http");
+const server = http.createServer(app);
+const socketio = require("socket.io");
+const io = socketio(server, {
+  cors: "*",
+});
+
 // Bagian ini jgn sampe ngeduluin semua syntax yg diatas
 const { authRoute, productRoute, userRoute } = require("./src/routes");
 
@@ -256,9 +264,102 @@ app.get("/hitungGenre", async (req, res) => {
   }
 });
 
+// IO SET
+let users = 0;
+let messages = [];
+let messageCnl = [];
+let userRoom = [];
+let chatRoom2 = [];
+let chatRoom = [];
+
+app.get("/mess", (req, res) => {
+  const { nsp } = req.query;
+
+  if (nsp === "/channel") {
+    return res.status(200).send(messagescnl);
+  }
+  return res.status(200).send(messages);
+});
+
+app.post("/sendmess", (req, res) => {
+  const {cnl} = req.query;
+  console.log(cnl);
+  if (cnl === "/channel") {
+    messageCnl.push(req.body);
+    console.log(req.body)
+    io.of("/channel").emit("message", messageCnl);
+    return res.status(200).send({messages: "Berhasil kirim message"});
+  } else {
+    if (req.body.room) {
+      // ada room
+      chatRoom.push(req.body);
+      // proses ini bisa digabungkan dengan sql atau mongodb
+      io.to(req.body.room).emit("messageRoom", chatRoom);
+
+      return res.status(200).send({ messages: "berhasil kirim message" });
+    } else {
+      messages.push(req.body);
+      console.log(messages);
+      io.emit("message", messages);
+      return res.status(200).send({messages: "Berhasil kirim message"});
+    };
+  };
+});
+
+// io global connect --namespace=default
+io.on('connection', (socket) => {
+  users++;
+  console.log("Isi socket: ", socket.id);
+  console.log('a user connected: ', users);
+
+  socket.on("bebas", (data) => { // Si bebas ngikutin emit yg di front end
+    users++;
+    console.log(data.name);
+    io.emit("bales", `${data.name} telah join chat`);
+  });
+
+  socket.on("joinRoom", (data) => {
+    socket.join(data.room); // Buat subscribe ke room
+    console.log(socket.rooms); // Utk lihat list room yg terdaftar
+    userRoom.push({...data, id: socket.id});
+    io.emit("respond", `${data.name} telah join room chat`)
+  });
+
+  socket.on("leaveRoom", (data) => {
+    socket.leave(data.room); 
+    console.log(socket.rooms); 
+    io.emit("respond", `${data.name} telah leave room chat`)
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log(reason);
+    console.log("user disconnected");
+    users--;
+    console.log("total connected :", users);
+
+    // io.emit("user connected", userCount);
+  })
+});
+
+io.of("/channel").on('connection', (socket) => {
+  console.log("Isi socket namespace: ", socket.id);
+
+  socket.on("bebas", (data) => {
+    console.log("di namespace ", data.name);
+    // cara emit di namespace
+    io.of("/channel").emit("bales", `${data.name} telah join chat`);
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log("user disconnected");
+  });
+});
+
+// 'event emitter'=> 'on emit'
+
 // KLO SALAH PATH/ALAMAT (ANYTHING SELAIN YG DIATAS)
 app.all("*", (req, res) => {
   return res.status(404).send({message: "Not Found"});
 });
 
-app.listen(PORT, () => console.log("API Jalan di PORT" + PORT));
+server.listen(PORT, () => console.log("API Jalan di PORT" + PORT));
