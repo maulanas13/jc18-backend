@@ -13,7 +13,7 @@ const mysql = require('mysql2');
     host: "db4free.net",
     port: 3306,
     user: "tesproduk13",
-    password: "sandisland1331",
+    password: "@dmin1331",
     database: 'belajar_pwdk'
   });
 
