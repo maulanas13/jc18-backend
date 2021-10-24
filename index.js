@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const PORT = 5100;
+const PORT = process.env.PORT || 5100;
 const { renderHtml } = require("./src/helpers");
 require('dotenv').config();
 const morgan = require("morgan");
