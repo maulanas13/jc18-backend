@@ -355,6 +355,14 @@ io.of("/channel").on('connection', (socket) => {
   });
 });
 
+app.get("/testtest/:id", (req, res) => {
+  res.send(`GET product with ID of ${req.params.id}`);
+});
+
+app.get("/testtest/categories", (req, res) => {
+  res.send(`GET product categories`);
+});
+
 // 'event emitter'=> 'on emit'
 
 // KLO SALAH PATH/ALAMAT (ANYTHING SELAIN YG DIATAS)

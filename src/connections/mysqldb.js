@@ -10,10 +10,10 @@ const mysql = require('mysql2');
 //   });
 
   const connection = mysql.createConnection({
-    host: "db4free.net",
+    host: process.env.DB_HOST_01,
     port: 3306,
-    user: "tesproduk13",
-    password: "@dmin1331",
+    user: process.env.DB_USER_01,
+    password: process.env.DB_PASS_01,
     database: 'belajar_pwdk'
   });
 
